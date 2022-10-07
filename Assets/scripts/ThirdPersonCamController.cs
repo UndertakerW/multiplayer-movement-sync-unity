@@ -13,37 +13,47 @@ public class ThirdPersonCamController : MonoBehaviour
    private float _mouseX, _mouseY, _zoom;
    private bool _cursorLocked = true;
 
+    public float cameraHeight = 5;
+
    void Start()
    {
-      Cursor.visible = false;
-      Cursor.lockState = CursorLockMode.Locked;
+      //Cursor.visible = false;
+      //Cursor.lockState = CursorLockMode.Locked;
 
       _camTransform = transform;
       _zoom = -10;
 
       // temporary start position when game loads.  Real starting location will be provided by server upon game start
       Player.position = new Vector3(Random.Range(-15.0f, 15.0f), 2, Random.Range(-15.0f, 15.0f));
-   }
 
-   void LateUpdate()
+        gameObject.transform.position = Player.position + new Vector3(0, cameraHeight, 0);
+
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        _cursorLocked = !_cursorLocked;
+    }
+
+    void LateUpdate()
    {
-      CamControl();
-   }
+        //CamControl();
+        gameObject.transform.position = Player.position + new Vector3(0, cameraHeight, 0);
+        gameObject.transform.LookAt(Player.position);
+    }
 
    void Update()
    {
-      if (Input.GetKeyDown("escape") && !_cursorLocked)
-      {
-         Cursor.visible = false;
-         Cursor.lockState = CursorLockMode.Locked;
-         _cursorLocked = !_cursorLocked;
-      }
-      else if (Input.GetKeyDown("escape") && _cursorLocked)
-      {
-         Cursor.visible = true;
-         Cursor.lockState = CursorLockMode.None;
-         _cursorLocked = !_cursorLocked;
-      }
+      //if (Input.GetKeyDown("escape") && !_cursorLocked)
+      //{
+      //   Cursor.visible = false;
+      //   Cursor.lockState = CursorLockMode.Locked;
+      //   _cursorLocked = !_cursorLocked;
+      //}
+      //else if (Input.GetKeyDown("escape") && _cursorLocked)
+      //{
+      //   Cursor.visible = true;
+      //   Cursor.lockState = CursorLockMode.None;
+      //   _cursorLocked = !_cursorLocked;
+      //}
    }
 
    private void CamControl()

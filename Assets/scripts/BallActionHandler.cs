@@ -7,6 +7,8 @@ public class BallActionHandler
    private float _baseBallThrust;
    private float _yAxisSpawnPointAdjustment = 2.0f;
 
+    public float ballVelocity = 10.0f;
+
    public BallActionHandler(Transform playerCamera, Rigidbody ball, float baseBallThrust)
    {
       _playerCamera = playerCamera;
@@ -28,10 +30,11 @@ public class BallActionHandler
          // For when there is mountainous terrain or obstacles and you don't want the ball to be thrown inside something
          if (!Physics.CheckSphere(spawnPos, 0.5f))
          {
+                
             _ball.position = spawnPos;
-            _ball.velocity = new Vector3(0, 0, 0);
+                _ball.velocity = playerForward * ballVelocity;
 
-            _ball.AddForce(DetermineVectorOfThrow() * DetermineThrustOfBall(throwKeyPressedTime), ForceMode.Impulse);
+            //_ball.AddForce(DetermineVectorOfThrow() * DetermineThrustOfBall(throwKeyPressedTime), ForceMode.Impulse);
 
             GameMessage throwMessage = new GameMessage("OnMessage", WebSocketService.ThrowOp);
             WebSocketService.Instance.SendWebSocketMessage(JsonUtility.ToJson(throwMessage));
@@ -61,7 +64,7 @@ public class BallActionHandler
    }
 
    // Returns a point just in front of the facing direction/vector of the player
-   private Vector3 GetSpawnPointInFrontOfPlayer(Vector3 playerPosition, Vector3 playerForward)
+   public Vector3 GetSpawnPointInFrontOfPlayer(Vector3 playerPosition, Vector3 playerForward)
    {
       Vector3 spawnPos = playerPosition + playerForward * 1.3f;
 

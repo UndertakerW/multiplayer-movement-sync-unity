@@ -9,8 +9,12 @@ public class Enemy : MonoBehaviour
    private Rigidbody _enemy;
    private const float DriftThreshold = 0.5f;
    private float maxSpeed = 10;
+    private float _yAxisSpawnPointAdjustment = 2.0f;
 
-   public int enemyPositionSequence = 0;
+    public int enemyPositionSequence = 0;
+    public GameObject fire;
+
+    public int health = 100;
 
    void FixedUpdate()
    {
@@ -32,8 +36,10 @@ public class Enemy : MonoBehaviour
                float drift = Vector3.Distance(_enemy.position, previousEnemyPositionMessage.currentPos);
                if (drift >= DriftThreshold)
                {
-                  // Debug.Log("Drift detected ******************************");
-                  StartCoroutine(CorrectDrift(_enemy.transform, _enemy.position, previousEnemyPositionMessage.currentPos, .2f));
+                        // Debug.Log("Drift detected ******************************");
+                        Debug.Log(previousEnemyPositionMessage.currentPos);
+                        Debug.Log(previousEnemyPositionMessage.currentForward);
+                  StartCoroutine(CorrectDrift(_enemy.transform, _enemy.position, previousEnemyPositionMessage.currentPos, _enemy.transform.forward, previousEnemyPositionMessage.currentForward, .2f));
                }
 
                // removes the previous message in queue now that we're done with the correction check
@@ -57,17 +63,20 @@ public class Enemy : MonoBehaviour
       }
    }
 
-   private IEnumerator CorrectDrift(Transform thisTransform, Vector3 startPos, Vector3 endPos, float correctionDuration)
+   private IEnumerator CorrectDrift(Transform thisTransform, Vector3 startPos, Vector3 endPos, Vector3 oldForward, Vector3 forward, float correctionDuration)
    {
       float i = 0.0f;
+        //thisTransform.forward = forward;
       while (i < correctionDuration)
       {
          i += Time.deltaTime;
          thisTransform.position = Vector3.Lerp(startPos, endPos, i);
+            thisTransform.forward = Vector3.Lerp(oldForward, forward, i);
 
-      }
+        }
       yield return null;
    }
+
 
    public void BufferState(PlayerPositionMessage state)
    {
@@ -101,4 +110,32 @@ public class Enemy : MonoBehaviour
    {
       Debug.Log("Enemy start");
    }
+
+    public void ThrowBall()
+    {
+        Vector3 spawnPos = GetSpawnPointInFrontOfPlayer(_enemy.transform.position, _enemy.transform.forward);
+        Instantiate(fire, spawnPos, Quaternion.identity);
+
+    }
+
+    // Returns a point just in front of the facing direction/vector of the player
+    private Vector3 GetSpawnPointInFrontOfPlayer(Vector3 playerPosition, Vector3 playerForward)
+    {
+        Vector3 spawnPos = playerPosition + playerForward * 1.3f;
+
+        // moves the spawn position up the Y axis 
+        spawnPos.y = spawnPos.y + _yAxisSpawnPointAdjustment;
+        return spawnPos;
+    }
+
+    public bool GetDamage(int damage)
+    {
+        health -= damage;
+        if (health < 0)
+        {
+            WebSocketService.Instance.BlockHit();
+            return false;
+        }
+        return true;
+    }
 }

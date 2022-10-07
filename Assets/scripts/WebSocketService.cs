@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using NativeWebSocket;
+using System;
 
 public class WebSocketService : Singleton<WebSocketService>
 {
@@ -54,7 +55,7 @@ public class WebSocketService : Singleton<WebSocketService>
             enemyNum = "1";
          }
 
-         _playerColorService.SetColors(playerNum);
+         //_playerColorService.SetColors(playerNum);
 
          // we also get the enemy's start position, set here
          _enemyPositionHandler.init(posMessage.enemyVelocity);
@@ -73,6 +74,10 @@ public class WebSocketService : Singleton<WebSocketService>
       else if (gameMessage.opcode == ThrowOp)
       {
          Debug.Log(gameMessage.message);
+            _enemyPositionHandler.ThrowBall();
+            int damage = 0;
+            Int32.TryParse(gameMessage.message, out damage);
+            localPlayerReference.gameObject.GetComponent<PlayerMovementController>().GetDamage(damage);
       }
       else if (gameMessage.opcode == YouWonOp)
       {
@@ -141,7 +146,8 @@ public class WebSocketService : Singleton<WebSocketService>
    private void SendVectorAsMessage(Vector3 vector, string opCode, int seq)
    {
       SerializableVector3 posToSend = vector;
-      GameMessage posMessage = new PlayerPositionMessage("OnMessage", opCode, posToSend, new SerializableVector3(), 0, seq, "", localPlayerReference.position);
+      GameMessage posMessage = new PlayerPositionMessage("OnMessage", opCode, posToSend, new SerializableVector3(), new SerializableVector3(),
+            0, seq, "", localPlayerReference.position, localPlayerReference.transform.forward);
       posMessage.uuid = matchId;
       SendWebSocketMessage(JsonUtility.ToJson(posMessage));
    }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Diagnostics;
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class PlayerMovementController : MonoBehaviour
@@ -7,6 +8,10 @@ public class PlayerMovementController : MonoBehaviour
    public Rigidbody ball;
    public Transform playerCamera;
    public float baseBallThrust = 20.0f;
+
+    public GameObject fire;
+    public int damage = 20;
+    public int health = 100;
 
    private float _throwKeyPressedStartTime;
    private BallActionHandler _ballActionHandler;
@@ -22,19 +27,20 @@ public class PlayerMovementController : MonoBehaviour
 
       if (!playerIdle) // skip sending extra zero vertors when player isn't moving
       {
-         Vector3 playerMovementRotation = new Vector3(x, 0f, y) * maxSpeed;
+        Vector3 playerMovementRotation = new Vector3(x, 0f, y) * maxSpeed;
 
-         Vector3 camRotation = playerCamera.transform.forward;
-         camRotation.y = 0f; // zero out camera's vertical axis so it doesn't make them fly
+        Vector3 camRotation = playerCamera.transform.forward;
+        camRotation.y = 0f; // zero out camera's vertical axis so it doesn't make them fly
 
-         // need to clamp camera rotation to x/z only and not y vertical 
-         Vector3 playerMovementWithCameraRotation = Quaternion.LookRotation(camRotation) * playerMovementRotation;
+    ////// need to clamp camera rotation to x/z only and not y vertical 
+        Vector3 playerMovementWithCameraRotation = Quaternion.LookRotation(camRotation) * playerMovementRotation;
 
-         // rounded to two decimal places
-         Vector3 roundedVelocity
-            = new Vector3(Mathf.Round(playerMovementWithCameraRotation.x * 100f) / 100f, 0f, Mathf.Round(playerMovementWithCameraRotation.z * 100f) / 100f);
+    ////// rounded to two decimal places
+    Vector3 roundedVelocity
+       = new Vector3(Mathf.Round(playerMovementWithCameraRotation.x * 100f) / 100f, 0f, Mathf.Round(playerMovementWithCameraRotation.z * 100f) / 100f);
 
-         // Debug.Log("velocity to send: " + roundedVelocity.ToString("f6"));
+            //Vector3 roundedVelocity = player.transform.GetComponent<Rigidbody>().velocity;
+            // Debug.Log("velocity to send: " + roundedVelocity.ToString("f6"));
 
          player.AddForce(roundedVelocity, ForceMode.VelocityChange);
 
@@ -70,8 +76,25 @@ public class PlayerMovementController : MonoBehaviour
 
    void Update()
    {
-      // limit player speed
-      if (player.velocity.magnitude > maxSpeed)
+        Ray camRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+        RaycastHit floorHit;
+
+        LayerMask floorMask = 1 << 6;
+
+        if (Physics.Raycast(camRay, out floorHit, 1000, floorMask))
+        {
+            Vector3 playerToMouse = floorHit.point - transform.position;
+
+            playerToMouse.y = 0f;
+
+            Quaternion newRotation = Quaternion.LookRotation(playerToMouse);
+
+            player.GetComponent<Rigidbody>().MoveRotation(newRotation);
+        }
+
+            // limit player speed
+            if (player.velocity.magnitude > maxSpeed)
       {
          player.velocity = Vector3.ClampMagnitude(player.velocity, maxSpeed);
       }
@@ -92,7 +115,30 @@ public class PlayerMovementController : MonoBehaviour
          if (EventSystem.current.IsPointerOverGameObject())
             return;
 
-         _ballActionHandler.ThrowBall(player.transform.position, player.transform.forward, _throwKeyPressedStartTime);
+            //_ballActionHandler.ThrowBall(player.transform.position, player.transform.forward, _throwKeyPressedStartTime);
+
+            int layerMask = 1 << 0;
+            RaycastHit hit;
+            Instantiate(fire, _ballActionHandler.GetSpawnPointInFrontOfPlayer(player.transform.position, player.transform.forward), Quaternion.identity);
+
+            int effect = 0;
+            if (Physics.Raycast(player.transform.position, player.transform.forward, out hit, 1000, layerMask))
+            {
+                effect = damage;
+                //UnityEngine.Debug.Log(hit.transform.gameObject);
+                if (hit.transform.gameObject.GetComponent<Enemy>())
+                {
+                    hit.transform.gameObject.GetComponent<Enemy>().GetDamage(effect);
+                    UnityEngine.Debug.Log(effect);
+                }
+
+            }
+            //UnityEngine.Debug.Log(player.transform.forward);
+
+            GameMessage throwMessage = new GameMessage("OnMessage", WebSocketService.ThrowOp, effect.ToString());
+            WebSocketService.Instance.SendWebSocketMessage(JsonUtility.ToJson(throwMessage));
+
+            //Debug.Log(player.transform.forward);
       }
    }
 
@@ -114,4 +160,16 @@ public class PlayerMovementController : MonoBehaviour
       // Give the websocket a reference to the object so it can know where its position is
       WebSocketService.Instance.SetLocalPlayerRef(player);
    }
+
+    public bool GetDamage(int damage)
+    {
+        health -= damage;
+        if (health < 0)
+        {
+            return false;
+        }
+        return true;
+    }
+
+
 }

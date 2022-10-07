@@ -14,7 +14,7 @@ public class BlockController : MonoBehaviour
          Debug.Log("Block Hit!");
          
          // notify server that we have a block hit
-         WebSocketService.Instance.BlockHit();
+         //WebSocketService.Instance.BlockHit();
       }
    }
 }

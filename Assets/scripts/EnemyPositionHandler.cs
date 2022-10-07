@@ -20,4 +20,9 @@ public class EnemyPositionHandler : MonoBehaviour
       // make sure we set the first position before initializion is complete
       enemy.BufferState(posMessage);
    }
+
+    public void ThrowBall()
+    {
+        enemy.ThrowBall();
+    }
 }
